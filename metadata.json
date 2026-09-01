@@ -1,0 +1,6 @@
+{
+  "name": "Alenka Rocha - Catálogo de Pilates",
+  "description": "Catálogo de exercícios e gerenciamento de categorias de Pilates e fisioterapia por Alenka Rocha.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
