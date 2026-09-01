@@ -56,18 +56,9 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
     return session.status === 'completed' || session.date < todayStr;
   };
 
-  // Counts for tabs
-  const { upcomingCount, historyCount } = useMemo(() => {
-    let upcoming = 0;
-    let history = 0;
-    sessions.forEach((s) => {
-      if (s.status === 'completed' || s.date < todayStr) {
-        history++;
-      } else {
-        upcoming++;
-      }
-    });
-    return { upcomingCount: upcoming, historyCount: history };
+  // Count of past/completed sessions, used by the "Ver Histórico" empty-state link
+  const historyCount = useMemo(() => {
+    return sessions.filter((s) => s.status === 'completed' || s.date < todayStr).length;
   }, [sessions, todayStr]);
 
   // Helper date formatter
@@ -268,28 +259,27 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
         </button>
       </div>
 
-      {/* Header Description */}
-      <div className="text-center sm:text-left">
-        <h1 className="text-2xl md:text-3xl font-bold text-[#191c1d] tracking-tight flex items-center justify-center sm:justify-start gap-2">
-          {activeTab === 'monthly'
-            ? 'Relação Mensal de Clientes'
-            : dailyViewMode === 'history'
-            ? 'Histórico de Aulas'
-            : 'Agenda de Aulas'}
-        </h1>
-        <p className="text-sm text-[#506261] mt-0.5">
-          {activeTab === 'monthly'
-            ? 'Controle de frequência e quantidade de aulas realizadas por cliente a cada mês.'
-            : dailyViewMode === 'history'
-            ? 'Aulas concluídas e datas anteriores registradas.'
-            : 'Controle de quem esteve presencial para hoje e próximos dias.'}
-        </p>
-      </div>
+      {/* Header Description & Histórico/Próximas toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="text-left">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#191c1d] tracking-tight">
+            {activeTab === 'monthly'
+              ? 'Relação Mensal de Clientes'
+              : dailyViewMode === 'history'
+              ? 'Histórico de Aulas'
+              : 'Agenda de Aulas'}
+          </h1>
+          <p className="text-sm text-[#506261] mt-0.5">
+            {activeTab === 'monthly'
+              ? 'Controle de frequência e quantidade de aulas realizadas por cliente a cada mês.'
+              : dailyViewMode === 'history'
+              ? 'Aulas concluídas e datas anteriores registradas.'
+              : 'Controle de quem esteve presencial para hoje e próximos dias.'}
+          </p>
+        </div>
 
-      {/* Botão de Histórico / Próximas centralizado */}
-      {activeTab === 'daily' && (
-        <div className="flex justify-center">
-          <div className="flex items-center gap-1.5 bg-[#f2f4f4] p-1 rounded-xl border border-[#bec9c7]/60 shrink-0 shadow-2xs">
+        {activeTab === 'daily' && (
+          <div className="flex items-center gap-1.5 bg-[#f2f4f4] p-1 rounded-xl border border-[#bec9c7]/60 self-start sm:self-auto shrink-0 shadow-2xs">
             <button
               onClick={() => setDailyViewMode('upcoming')}
               className={`px-3 py-2 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -301,15 +291,6 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
             >
               <Calendar className="w-3.5 h-3.5" />
               <span>Próximas</span>
-              <span
-                className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold leading-none ${
-                  dailyViewMode === 'upcoming'
-                    ? 'bg-white/20 text-white'
-                    : 'bg-[#bec9c7]/50 text-[#506261]'
-                }`}
-              >
-                {upcomingCount}
-              </span>
             </button>
 
             <button
@@ -323,19 +304,10 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
             >
               <History className="w-3.5 h-3.5" />
               <span>Histórico</span>
-              <span
-                className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold leading-none ${
-                  dailyViewMode === 'history'
-                    ? 'bg-white/20 text-white'
-                    : 'bg-[#bec9c7]/50 text-[#506261]'
-                }`}
-              >
-                {historyCount}
-              </span>
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* TAB 1: DAILY AGENDA */}
       {activeTab === 'daily' && (
