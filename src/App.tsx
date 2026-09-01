@@ -497,8 +497,6 @@ export default function App() {
         onEdit={
           activeScreen === 'exercise-detail' && selectedExercise
             ? () => handleEditExercise(selectedExercise)
-            : activeScreen === 'client-detail' && selectedStudent
-            ? () => handleEditStudent(selectedStudent)
             : undefined
         }
       />

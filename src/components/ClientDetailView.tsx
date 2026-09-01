@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
+  ArrowLeft,
+  MoreVertical,
   Edit3,
   Phone,
   MessageCircle,
   AlertTriangle,
   Calendar,
   Clock,
-  CheckCircle,
   RotateCcw,
   Plus,
   Trash2,
@@ -42,6 +43,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = ({
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showActionsModal, setShowActionsModal] = useState(false);
 
   // Filter sessions belonging to this student
   const studentSessions = sessions
@@ -88,36 +90,24 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = ({
 
   return (
     <main className="w-full max-w-3xl mx-auto px-4 md:px-8 py-6 pb-28 md:pb-28 flex flex-col gap-6">
-      {/* Action buttons (top right) */}
-      <div className="flex items-center justify-end gap-2">
+      {/* Top bar: back to Clientes + more actions */}
+      <div className="flex items-center justify-between">
         <button
-          onClick={() => setShowExportModal(true)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white border border-[#bec9c7]/80 text-[#00615f] hover:bg-[#d0e4e3]/30 hover:border-[#00615f] text-xs md:text-sm font-semibold shadow-2xs transition-all cursor-pointer"
-          title="Exportar aulas deste cliente para o Google Agenda"
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#506261] hover:text-[#00615f] transition-colors cursor-pointer"
         >
-          <Calendar className="w-4 h-4 text-[#00615f]" />
-          <span>Google Agenda</span>
+          <ArrowLeft className="w-4 h-4" />
+          <span>Clientes</span>
         </button>
 
         <button
-          onClick={() => onEdit(student)}
-          className="p-2.5 rounded-full bg-white border border-[#bec9c7]/80 text-[#00615f] hover:bg-[#d0e4e3]/30 hover:border-[#00615f] shadow-2xs transition-all cursor-pointer"
-          title="Editar Cliente"
-          aria-label="Editar Cliente"
+          onClick={() => setShowActionsModal(true)}
+          className="p-2.5 rounded-full bg-white border border-[#bec9c7]/80 text-[#191c1d] hover:bg-[#eceeee] shadow-2xs transition-all cursor-pointer"
+          title="Mais ações"
+          aria-label="Mais ações"
         >
-          <Edit3 className="w-4 h-4" />
+          <MoreVertical className="w-4 h-4" />
         </button>
-
-        {onDeleteStudent && (
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="p-2.5 rounded-full bg-white border border-[#bec9c7]/80 text-rose-600 hover:bg-rose-50 hover:border-rose-300 shadow-2xs transition-all cursor-pointer"
-            title="Excluir Cliente"
-            aria-label="Excluir Cliente"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
       </div>
 
       {/* Main Client Info Card */}
@@ -365,6 +355,53 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = ({
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
       />
+
+      {/* Actions modal (3-dot menu): Editar / Excluir */}
+      {showActionsModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in"
+          onClick={() => setShowActionsModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-2 max-w-xs w-full shadow-xl border border-[#bec9c7]/60"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold text-[#191c1d] px-3.5 pt-3 pb-2">
+              {student.name}
+            </h3>
+            <button
+              onClick={() => {
+                setShowActionsModal(false);
+                onEdit(student);
+              }}
+              className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-[#f2f4f4] text-[#191c1d] text-sm font-semibold transition-colors cursor-pointer"
+            >
+              <Edit3 className="w-4 h-4 text-[#00615f]" />
+              <span>Editar Cliente</span>
+            </button>
+            {onDeleteStudent && (
+              <button
+                onClick={() => {
+                  setShowActionsModal(false);
+                  setShowDeleteConfirm(true);
+                }}
+                className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-rose-50 text-rose-600 text-sm font-semibold transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Excluir Cliente</span>
+              </button>
+            )}
+            <div className="pt-1 mt-1 border-t border-[#eceeee]">
+              <button
+                onClick={() => setShowActionsModal(false)}
+                className="w-full text-center px-3.5 py-2.5 rounded-xl text-sm font-semibold text-[#506261] hover:bg-[#eceeee] cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
