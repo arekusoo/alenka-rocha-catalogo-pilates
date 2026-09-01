@@ -5,8 +5,6 @@ import {
   Check,
 } from 'lucide-react';
 import { Exercise, Category, IntensityLevel } from '../types';
-import { AVAILABLE_ICONS } from '../data/initialData';
-import { ExerciseIcon } from './ExerciseIcon';
 
 interface NewExerciseViewProps {
   categories: Category[];
@@ -33,7 +31,6 @@ export const NewExerciseView: React.FC<NewExerciseViewProps> = ({
   );
   const [typeTag, setTypeTag] = useState(editingExercise?.typeTag || 'Pilates Solo');
   const [description, setDescription] = useState(editingExercise?.description || '');
-  const [selectedIcon, setSelectedIcon] = useState(editingExercise?.icon || 'person');
 
   // Image source modes: 'url' | 'upload'
   const [imageMode, setImageMode] = useState<'url' | 'upload'>('url');
@@ -53,7 +50,6 @@ export const NewExerciseView: React.FC<NewExerciseViewProps> = ({
       setIntensity(editingExercise.intensity);
       setTypeTag(editingExercise.typeTag || 'Pilates Solo');
       setDescription(editingExercise.description);
-      setSelectedIcon(editingExercise.icon);
       setImageUrl(editingExercise.imageUrl);
     }
   }, [editingExercise]);
@@ -113,7 +109,7 @@ export const NewExerciseView: React.FC<NewExerciseViewProps> = ({
         intensity,
         typeTag: typeTag.trim() || 'Pilates Solo',
         description: description.trim(),
-        icon: selectedIcon,
+        icon: currentCat ? currentCat.icon : 'person',
         imageUrl:
           imageUrl.trim() ||
           'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1000&q=80',
@@ -306,33 +302,6 @@ export const NewExerciseView: React.FC<NewExerciseViewProps> = ({
             placeholder="Ex: Um exercício fundamental para o controle da respiração e fortalecimento do core..."
             className="bg-[#ffffff] border border-[#bec9c7] rounded-xl px-4 py-3 text-sm md:text-base text-[#191c1d] placeholder-[#6f7978] focus:border-[#00615f] focus:ring-1 focus:ring-[#00615f] outline-none transition-colors shadow-2xs resize-y"
           />
-        </div>
-
-        {/* Ícone do Exercício */}
-        <div className="flex flex-col space-y-2">
-          <label className="text-sm font-semibold text-[#191c1d] flex items-center gap-1">
-            Ícone do Exercício <span className="text-[#ba1a1a]">*</span>
-          </label>
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5">
-            {AVAILABLE_ICONS.map((icon) => {
-              const isSelected = selectedIcon === icon.name;
-              return (
-                <button
-                  type="button"
-                  key={icon.id}
-                  onClick={() => setSelectedIcon(icon.name)}
-                  title={icon.label}
-                  className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
-                    isSelected
-                      ? 'border-2 border-[#00615f] bg-[#d0e4e3] text-[#00615f] shadow-xs scale-105'
-                      : 'border-[#bec9c7] bg-white text-[#506261] hover:bg-[#f8fafa]'
-                  }`}
-                >
-                  <ExerciseIcon name={icon.name} size={22} />
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         {/* Imagem de Capa (Link Direto ou Upload) */}

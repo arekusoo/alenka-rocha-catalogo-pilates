@@ -244,6 +244,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                   : 'bg-[#ffffff] text-[#3f4948] border border-[#bec9c7] hover:bg-[#eceeee]'
               }`}
             >
+              <ExerciseIcon name={cat.icon} size={14} />
               <span>{cat.name}</span>
             </button>
           );
