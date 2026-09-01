@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, X, Edit3 } from 'lucide-react';
 import { ActiveScreen } from '../types';
+import logo from '../assets/logo.png';
 
 interface NavbarProps {
   activeScreen: ActiveScreen;
@@ -20,13 +21,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   if (activeScreen === 'catalog') {
     return (
       <header className="bg-[#f8fafa] flex justify-center items-center px-4 md:px-8 w-full h-16 top-0 z-40 sticky border-b border-[#eceeee]/80 backdrop-blur-md bg-[#f8fafa]/95">
-        <h1
+        <img
           id="app-brand-title"
-          className="text-2xl md:text-3xl font-extrabold text-[#00615f] tracking-tight text-center cursor-pointer"
+          src={logo}
+          alt="Alenka Rocha - Fisioterapeuta"
+          className="h-9 md:h-11 w-auto cursor-pointer"
           onClick={() => onNavigate('catalog')}
-        >
-          Alenka Rocha
-        </h1>
+        />
       </header>
     );
   }
