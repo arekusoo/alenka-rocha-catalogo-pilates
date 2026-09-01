@@ -4,13 +4,13 @@ import {
   Link as LinkIcon,
   Check,
 } from 'lucide-react';
-import { Exercise, Category, IntensityLevel } from '../types';
+import { Exercise, Category, IntensityLevel, NewItemTab } from '../types';
 
 interface NewExerciseViewProps {
   categories: Category[];
   editingExercise?: Exercise | null;
   onSaveExercise: (exerciseData: Omit<Exercise, 'id' | 'createdAt'>, exerciseId?: string) => void;
-  onSwitchTab: (tab: 'exercise' | 'category') => void;
+  onSwitchTab: (tab: NewItemTab) => void;
   onCancel: () => void;
 }
 
@@ -121,20 +121,27 @@ export const NewExerciseView: React.FC<NewExerciseViewProps> = ({
 
   return (
     <main className="flex-grow pb-28 pt-6 px-4 md:px-8 max-w-3xl mx-auto w-full flex flex-col gap-6">
-      {/* Segmented Control Tab */}
+      {/* Segmented Control Tab (Exercício | Categoria | Cliente) */}
       <div className="flex bg-[#f2f4f4] rounded-xl p-1 border border-[#bec9c7]/60 w-full max-w-md mx-auto">
         <button
           type="button"
-          className="flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold bg-[#00615f] text-white shadow-xs transition-all"
+          className="flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold bg-[#00615f] text-white shadow-xs transition-all cursor-pointer"
         >
           Exercício
         </button>
         <button
           type="button"
           onClick={() => onSwitchTab('category')}
-          className="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium text-[#506261] hover:bg-[#ffffff]/60 transition-all"
+          className="flex-1 py-2.5 px-3 rounded-lg text-sm font-medium text-[#506261] hover:bg-[#ffffff]/60 transition-all cursor-pointer"
         >
           Categoria
+        </button>
+        <button
+          type="button"
+          onClick={() => onSwitchTab('student')}
+          className="flex-1 py-2.5 px-3 rounded-lg text-sm font-medium text-[#506261] hover:bg-[#ffffff]/60 transition-all cursor-pointer"
+        >
+          Cliente
         </button>
       </div>
 

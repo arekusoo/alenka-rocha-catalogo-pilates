@@ -18,7 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onEdit,
   isEditing,
 }) => {
-  if (activeScreen === 'catalog') {
+  if (activeScreen === 'catalog' || activeScreen === 'agenda' || activeScreen === 'clients') {
     return (
       <header className="bg-[#f8fafa] flex justify-center items-center px-4 md:px-8 w-full h-16 top-0 z-40 sticky border-b border-[#eceeee]/80 backdrop-blur-md bg-[#f8fafa]/95">
         <img
@@ -28,6 +28,34 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="h-9 md:h-11 w-auto cursor-pointer"
           onClick={() => onNavigate('catalog')}
         />
+      </header>
+    );
+  }
+
+  if (activeScreen === 'client-detail') {
+    return (
+      <header className="bg-[#f8fafa] flex justify-between items-center px-4 md:px-8 w-full h-16 top-0 z-40 sticky border-b border-[#eceeee]/80">
+        <button
+          id="client-detail-back-btn"
+          onClick={() => onNavigate('clients')}
+          className="text-[#3f4948] hover:bg-[#eceeee] rounded-full p-2.5 transition-transform active:scale-95 flex items-center justify-center"
+          aria-label="Voltar para a lista de clientes"
+        >
+          <ArrowLeft className="w-6 h-6 text-[#191c1d]" />
+        </button>
+        <span className="text-sm font-semibold text-[#506261] tracking-wider uppercase">
+          Ficha do Cliente
+        </span>
+        {onEdit && (
+          <button
+            id="client-detail-edit-btn"
+            onClick={onEdit}
+            className="flex items-center gap-1.5 text-[#191c1d] hover:text-[#00615f] hover:bg-[#eceeee] font-medium text-sm px-3 py-1.5 rounded-full transition-all"
+          >
+            <Edit3 className="w-4 h-4" />
+            <span>Editar</span>
+          </button>
+        )}
       </header>
     );
   }
@@ -73,9 +101,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
         <span className="text-sm font-semibold text-[#506261] tracking-wide">
           {activeScreen === 'exercise-form' && isEditing
-            ? 'Editar Exercício'
+            ? 'Editar Item'
             : activeScreen === 'exercise-form'
-            ? 'Novo Exercício'
+            ? 'Novo Cadastro'
             : 'Gerenciar Categorias'}
         </span>
         <div className="w-10"></div>

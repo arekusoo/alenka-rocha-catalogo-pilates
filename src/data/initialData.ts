@@ -1,4 +1,4 @@
-import { Category, Exercise } from '../types';
+import { Category, Exercise, PlanOption } from '../types';
 
 export const INITIAL_CATEGORIES: Category[] = [
   {
@@ -159,6 +159,41 @@ export const INITIAL_EXERCISES: Exercise[] = [
     createdAt: '2026-01-22T08:20:00.000Z',
     tags: ['Mobilidade', 'Alongamento', 'Coluna'],
   }
+];
+
+export const STUDENT_PLANS: PlanOption[] = [
+  {
+    id: '1x_week',
+    name: '1x por semana (4 aulas mensais)',
+    price: 'R$ 264,00',
+    fullLabel: '1x por semana (4 aulas mensais) – R$ 264,00',
+    totalClasses: 4,
+    isMonthly: true,
+  },
+  {
+    id: '2x_week',
+    name: '2x por semana (8 aulas mensais)',
+    price: 'R$ 404,00',
+    fullLabel: '2x por semana (8 aulas mensais) – R$ 404,00',
+    totalClasses: 8,
+    isMonthly: true,
+  },
+  {
+    id: '3x_week',
+    name: '3x por semana (12 aulas mensais)',
+    price: 'R$ 554,00',
+    fullLabel: '3x por semana (12 aulas mensais) – R$ 554,00',
+    totalClasses: 12,
+    isMonthly: true,
+  },
+  {
+    id: 'avulsa',
+    name: 'Aula avulsa',
+    price: 'R$ 80,00',
+    fullLabel: 'Aula avulsa – R$ 80,00',
+    totalClasses: 1,
+    isMonthly: false,
+  },
 ];
 
 export const AVAILABLE_ICONS = [

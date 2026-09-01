@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PlusCircle, Trash2 } from 'lucide-react';
-import { Category, Exercise } from '../types';
+import { Category, Exercise, NewItemTab } from '../types';
 import { AVAILABLE_ICONS } from '../data/initialData';
 import { ExerciseIcon } from './ExerciseIcon';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
@@ -10,7 +10,7 @@ interface ManageCategoriesViewProps {
   exercises: Exercise[];
   onAddCategory: (categoryData: Omit<Category, 'id'>) => void;
   onDeleteCategory: (categoryId: string) => void;
-  onSwitchTab: (tab: 'exercise' | 'category') => void;
+  onSwitchTab: (tab: NewItemTab) => void;
 }
 
 export const ManageCategoriesView: React.FC<ManageCategoriesViewProps> = ({
@@ -48,19 +48,25 @@ export const ManageCategoriesView: React.FC<ManageCategoriesViewProps> = ({
 
   return (
     <main className="flex-grow pb-28 pt-6 px-4 md:px-8 max-w-3xl mx-auto w-full flex flex-col gap-6">
-      {/* Segmented Control Tab */}
+      {/* Segmented Control Tab (Exercício | Categoria | Cliente) */}
       <div className="flex bg-[#f2f4f4] rounded-xl p-1 border border-[#bec9c7]/60 w-full max-w-md mx-auto">
         <button
           onClick={() => onSwitchTab('exercise')}
-          className="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium text-[#506261] hover:bg-[#ffffff]/60 transition-colors"
+          className="flex-1 py-2.5 px-3 rounded-lg text-sm font-medium text-[#506261] hover:bg-[#ffffff]/60 transition-colors cursor-pointer"
         >
           Exercício
         </button>
         <button
           type="button"
-          className="flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold bg-[#00615f] text-white shadow-xs transition-all"
+          className="flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold bg-[#00615f] text-white shadow-xs transition-all cursor-pointer"
         >
           Categoria
+        </button>
+        <button
+          onClick={() => onSwitchTab('student')}
+          className="flex-1 py-2.5 px-3 rounded-lg text-sm font-medium text-[#506261] hover:bg-[#ffffff]/60 transition-colors cursor-pointer"
+        >
+          Cliente
         </button>
       </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ActiveScreen, Exercise, Category } from './types';
+import { ActiveScreen, Exercise, Category, Student, ClassSession, NewItemTab } from './types';
 import { INITIAL_CATEGORIES, INITIAL_EXERCISES } from './data/initialData';
 import { supabase } from './lib/supabaseClient';
 import { Navbar } from './components/Navbar';
@@ -8,24 +8,42 @@ import { CatalogView } from './components/CatalogView';
 import { ExerciseDetailView } from './components/ExerciseDetailView';
 import { NewExerciseView } from './components/NewExerciseView';
 import { ManageCategoriesView } from './components/ManageCategoriesView';
+import { ClientsView } from './components/ClientsView';
+import { ClientDetailView } from './components/ClientDetailView';
+import { StudentFormView, ScheduledClassInput } from './components/StudentFormView';
+import { AgendaView } from './components/AgendaView';
+import { AddSessionModal } from './components/AddSessionModal';
 import { CheckCircle2 } from 'lucide-react';
 
 export default function App() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [sessions, setSessions] = useState<ClassSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [activeScreen, setActiveScreen] = useState<ActiveScreen>('catalog');
+  const [formActiveTab, setFormActiveTab] = useState<NewItemTab>('exercise');
+
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+
+  // Quick Add Session modal for a specific student
+  const [schedulingStudent, setSchedulingStudent] = useState<Student | null>(null);
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load catalog from Supabase (shared across every visitor)
+  // Load catalog + clients/agenda from Supabase (shared across every visitor)
   useEffect(() => {
     const loadCatalog = async () => {
-      const [categoriesRes, exercisesRes] = await Promise.all([
+      const [categoriesRes, exercisesRes, studentsRes, sessionsRes] = await Promise.all([
         supabase.from('categories').select('*'),
         supabase.from('exercises').select('*').order('createdAt', { ascending: false }),
+        supabase.from('students').select('*').order('createdAt', { ascending: false }),
+        supabase.from('class_sessions').select('*'),
       ]);
 
       if (categoriesRes.error || exercisesRes.error) {
@@ -36,6 +54,16 @@ export default function App() {
         setCategories(categoriesRes.data as Category[]);
         setExercises(exercisesRes.data as Exercise[]);
       }
+
+      if (studentsRes.error || sessionsRes.error) {
+        console.error('Error loading clients/agenda from Supabase:', studentsRes.error || sessionsRes.error);
+        setStudents([]);
+        setSessions([]);
+      } else {
+        setStudents(studentsRes.data as Student[]);
+        setSessions(sessionsRes.data as ClassSession[]);
+      }
+
       setIsLoading(false);
     };
 
@@ -46,10 +74,10 @@ export default function App() {
     setToastMessage(message);
     setTimeout(() => {
       setToastMessage(null);
-    }, 3000);
+    }, 3200);
   };
 
-  // Handlers for Navigation
+  // --- Exercise Handlers ---
   const handleSelectExercise = (exercise: Exercise) => {
     setSelectedExercise(exercise);
     setActiveScreen('exercise-detail');
@@ -58,12 +86,14 @@ export default function App() {
 
   const handleAddNewExercise = () => {
     setEditingExercise(null);
+    setFormActiveTab('exercise');
     setActiveScreen('exercise-form');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleEditExercise = (exercise: Exercise) => {
     setEditingExercise(exercise);
+    setFormActiveTab('exercise');
     setActiveScreen('exercise-form');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -131,6 +161,7 @@ export default function App() {
     showToast('Exercício excluído com sucesso.');
   };
 
+  // --- Category Handlers ---
   const handleAddCategory = async (categoryData: Omit<Category, 'id'>) => {
     const newCat: Category = {
       ...categoryData,
@@ -160,6 +191,280 @@ export default function App() {
     showToast(`Categoria ${cat ? `"${cat.name}"` : ''} excluída.`);
   };
 
+  // --- Student (Client) Handlers ---
+  const handleSelectStudent = (student: Student) => {
+    setSelectedStudent(student);
+    setActiveScreen('client-detail');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAddNewStudent = () => {
+    setEditingStudent(null);
+    setFormActiveTab('student');
+    setActiveScreen('exercise-form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleEditStudent = (student: Student) => {
+    setEditingStudent(student);
+    setFormActiveTab('student');
+    setActiveScreen('exercise-form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSaveStudent = async (
+    studentData: Omit<Student, 'id' | 'createdAt'>,
+    studentId?: string,
+    scheduledClasses?: ScheduledClassInput[]
+  ) => {
+    if (studentId) {
+      // Editing existing
+      const { error } = await supabase.from('students').update(studentData).eq('id', studentId);
+      if (error) {
+        console.error('Error updating student:', error);
+        showToast('Erro ao atualizar cliente.');
+        return;
+      }
+      setStudents((prev) =>
+        prev.map((s) => (s.id === studentId ? { ...s, ...studentData } : s))
+      );
+      if (selectedStudent && selectedStudent.id === studentId) {
+        setSelectedStudent({
+          ...selectedStudent,
+          ...studentData,
+        });
+      }
+
+      // Keep student name/phone/limitations in sync on their future sessions
+      const { error: sessionsError } = await supabase
+        .from('class_sessions')
+        .update({
+          studentName: studentData.name,
+          studentPhone: studentData.phone,
+          studentLimitations: studentData.limitations,
+        })
+        .eq('studentId', studentId);
+      if (sessionsError) {
+        console.error('Error syncing sessions after student update:', sessionsError);
+      }
+      setSessions((prev) =>
+        prev.map((sess) =>
+          sess.studentId === studentId
+            ? {
+                ...sess,
+                studentName: studentData.name,
+                studentPhone: studentData.phone,
+                studentLimitations: studentData.limitations,
+              }
+            : sess
+        )
+      );
+
+      showToast('Aluno atualizado com sucesso!');
+      setActiveScreen('client-detail');
+    } else {
+      // Creating new
+      const newStudentId = `student-${Date.now()}`;
+      const newStudent: Student = {
+        ...studentData,
+        id: newStudentId,
+        createdAt: new Date().toISOString(),
+      };
+      const { error } = await supabase.from('students').insert(newStudent);
+      if (error) {
+        console.error('Error creating student:', error);
+        showToast('Erro ao cadastrar cliente.');
+        return;
+      }
+
+      // Create all scheduled class sessions configured in the form
+      let newSessions: ClassSession[];
+      if (scheduledClasses && scheduledClasses.length > 0) {
+        newSessions = scheduledClasses.map((cls, idx) => ({
+          id: `session-${Date.now()}-${idx}`,
+          studentId: newStudentId,
+          studentName: newStudent.name,
+          studentPhone: newStudent.phone,
+          studentLimitations: newStudent.limitations,
+          date: cls.date,
+          time: cls.time,
+          classNumber: idx + 1,
+          totalClasses: newStudent.totalPlanClasses,
+          descriptionLabel:
+            newStudent.planId === 'avulsa'
+              ? 'Aula Avulsa'
+              : `Aula ${idx + 1} de ${newStudent.totalPlanClasses}`,
+          status: 'scheduled',
+        }));
+      } else {
+        const todayStr = new Date().toISOString().split('T')[0];
+        newSessions = [
+          {
+            id: `session-${Date.now()}`,
+            studentId: newStudentId,
+            studentName: newStudent.name,
+            studentPhone: newStudent.phone,
+            studentLimitations: newStudent.limitations,
+            date: todayStr,
+            time: '08:00',
+            classNumber: 1,
+            totalClasses: newStudent.totalPlanClasses,
+            descriptionLabel:
+              newStudent.planId === 'avulsa' ? 'Aula Avulsa' : `Aula 1 de ${newStudent.totalPlanClasses}`,
+            status: 'scheduled',
+          },
+        ];
+      }
+
+      const { error: sessionsError } = await supabase.from('class_sessions').insert(newSessions);
+      if (sessionsError) {
+        console.error('Error creating sessions for student:', sessionsError);
+        showToast('Cliente cadastrado, mas houve um erro ao agendar as aulas.');
+      }
+
+      setStudents((prev) => [newStudent, ...prev]);
+      setSessions((prev) => [...newSessions, ...prev]);
+      showToast(`Aluno ${newStudent.name} cadastrado com sucesso!`);
+      setSelectedStudent(newStudent);
+      setActiveScreen('clients');
+    }
+  };
+
+  const handleDeleteStudent = async (studentId: string) => {
+    // The "students" row deletion cascades to its sessions in the database.
+    const { error } = await supabase.from('students').delete().eq('id', studentId);
+    if (error) {
+      console.error('Error deleting student:', error);
+      showToast('Erro ao excluir cliente.');
+      return;
+    }
+    setStudents((prev) => prev.filter((s) => s.id !== studentId));
+    setSessions((prev) => prev.filter((sess) => sess.studentId !== studentId));
+    setSelectedStudent(null);
+    setActiveScreen('clients');
+    showToast('Aluno e agendamentos excluídos com sucesso.');
+  };
+
+  // --- Class Sessions / Agenda Handlers ---
+  const handleConfirmAttendance = async (session: ClassSession, didAttend: boolean = true) => {
+    const isMarkingCompleted = didAttend;
+    const newStatus = isMarkingCompleted ? 'completed' : 'scheduled';
+    const newCompletedAt = isMarkingCompleted ? new Date().toISOString() : null;
+
+    const { error } = await supabase
+      .from('class_sessions')
+      .update({ status: newStatus, completedAt: newCompletedAt })
+      .eq('id', session.id);
+    if (error) {
+      console.error('Error updating session status:', error);
+      showToast('Erro ao atualizar presença.');
+      return;
+    }
+
+    // Update remaining classes for student (+1 if reverting, -1 if marking completed)
+    const student = students.find((st) => st.id === session.studentId);
+    if (student) {
+      const delta = isMarkingCompleted ? -1 : 1;
+      const newRemaining = Math.min(
+        student.totalPlanClasses,
+        Math.max(0, student.remainingClasses + delta)
+      );
+      const { error: studentError } = await supabase
+        .from('students')
+        .update({ remainingClasses: newRemaining })
+        .eq('id', student.id);
+      if (studentError) {
+        console.error('Error updating student remaining classes:', studentError);
+      }
+      setStudents((prev) =>
+        prev.map((st) => (st.id === student.id ? { ...st, remainingClasses: newRemaining } : st))
+      );
+      if (selectedStudent && selectedStudent.id === student.id) {
+        setSelectedStudent((prev) => (prev ? { ...prev, remainingClasses: newRemaining } : null));
+      }
+    }
+
+    setSessions((prev) =>
+      prev.map((s) =>
+        s.id === session.id
+          ? { ...s, status: newStatus, completedAt: newCompletedAt ?? undefined }
+          : s
+      )
+    );
+
+    if (isMarkingCompleted) {
+      showToast(`Presença confirmada para ${session.studentName}!`);
+    } else {
+      showToast(`Presença desmarcada para ${session.studentName}. Saldo restaurado.`);
+    }
+  };
+
+  const handleRescheduleSession = async (
+    session: ClassSession,
+    newDate: string,
+    newTime: string
+  ) => {
+    const wasCompleted = session.status === 'completed';
+
+    const { error } = await supabase
+      .from('class_sessions')
+      .update({ date: newDate, time: newTime, status: 'scheduled', completedAt: null })
+      .eq('id', session.id);
+    if (error) {
+      console.error('Error rescheduling session:', error);
+      showToast('Erro ao reagendar aula.');
+      return;
+    }
+
+    setSessions((prev) =>
+      prev.map((s) =>
+        s.id === session.id
+          ? { ...s, date: newDate, time: newTime, status: 'scheduled', completedAt: undefined }
+          : s
+      )
+    );
+
+    // If it was completed before rescheduling, restore 1 class to balance
+    if (wasCompleted) {
+      const student = students.find((st) => st.id === session.studentId);
+      if (student) {
+        const newRemaining = Math.min(student.totalPlanClasses, student.remainingClasses + 1);
+        const { error: studentError } = await supabase
+          .from('students')
+          .update({ remainingClasses: newRemaining })
+          .eq('id', student.id);
+        if (studentError) {
+          console.error('Error restoring student remaining classes:', studentError);
+        }
+        setStudents((prev) =>
+          prev.map((st) => (st.id === student.id ? { ...st, remainingClasses: newRemaining } : st))
+        );
+        if (selectedStudent && selectedStudent.id === student.id) {
+          setSelectedStudent((prev) =>
+            prev ? { ...prev, remainingClasses: newRemaining } : null
+          );
+        }
+      }
+    }
+
+    showToast(`Aula de ${session.studentName} reagendada com sucesso!`);
+  };
+
+  const handleSaveNewSession = async (sessionData: Omit<ClassSession, 'id'>) => {
+    const newSession: ClassSession = {
+      ...sessionData,
+      id: `session-${Date.now()}`,
+    };
+    const { error } = await supabase.from('class_sessions').insert(newSession);
+    if (error) {
+      console.error('Error creating session:', error);
+      showToast('Erro ao agendar aula.');
+      return;
+    }
+    setSessions((prev) => [newSession, ...prev]);
+    showToast(`Aula agendada com sucesso para ${sessionData.studentName}!`);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f8fafa] flex items-center justify-center">
@@ -174,26 +479,68 @@ export default function App() {
       <Navbar
         activeScreen={activeScreen}
         onNavigate={(screen) => setActiveScreen(screen)}
-        isEditing={!!editingExercise}
+        isEditing={!!editingExercise || !!editingStudent}
         onEdit={
           activeScreen === 'exercise-detail' && selectedExercise
             ? () => handleEditExercise(selectedExercise)
+            : activeScreen === 'client-detail' && selectedStudent
+            ? () => handleEditStudent(selectedStudent)
             : undefined
         }
       />
 
       {/* Main View Transition */}
       <div className="flex-1 flex flex-col">
+        {/* Screen: CATALOG */}
         {activeScreen === 'catalog' && (
           <CatalogView
             exercises={exercises}
             categories={categories}
             onSelectExercise={handleSelectExercise}
             onAddNewExercise={handleAddNewExercise}
-            onManageCategories={() => setActiveScreen('category-manage')}
+            onManageCategories={() => {
+              setFormActiveTab('category');
+              setActiveScreen('category-manage');
+            }}
           />
         )}
 
+        {/* Screen: AGENDA */}
+        {activeScreen === 'agenda' && (
+          <AgendaView
+            sessions={sessions}
+            students={students}
+            onConfirmAttendance={handleConfirmAttendance}
+            onRescheduleSession={handleRescheduleSession}
+            onSelectStudent={handleSelectStudent}
+          />
+        )}
+
+        {/* Screen: CLIENTS LIST */}
+        {activeScreen === 'clients' && (
+          <ClientsView
+            students={students}
+            onSelectStudent={handleSelectStudent}
+            onEditStudent={handleEditStudent}
+            onAddNewStudent={handleAddNewStudent}
+          />
+        )}
+
+        {/* Screen: CLIENT DETAIL */}
+        {activeScreen === 'client-detail' && selectedStudent && (
+          <ClientDetailView
+            student={selectedStudent}
+            sessions={sessions}
+            onBack={() => setActiveScreen('clients')}
+            onEdit={handleEditStudent}
+            onRescheduleSession={() => setActiveScreen('agenda')}
+            onConfirmAttendance={handleConfirmAttendance}
+            onAddSessionForStudent={(student) => setSchedulingStudent(student)}
+            onDeleteStudent={handleDeleteStudent}
+          />
+        )}
+
+        {/* Screen: EXERCISE DETAIL */}
         {activeScreen === 'exercise-detail' && selectedExercise && (
           <ExerciseDetailView
             exercise={selectedExercise}
@@ -203,12 +550,14 @@ export default function App() {
           />
         )}
 
-        {activeScreen === 'exercise-form' && (
+        {/* Screen: FORM (+ Novo) with 3 unified tabs: Exercício | Categoria | Cliente */}
+        {activeScreen === 'exercise-form' && formActiveTab === 'exercise' && (
           <NewExerciseView
             categories={categories}
             editingExercise={editingExercise}
             onSaveExercise={handleSaveExercise}
             onSwitchTab={(tab) => {
+              setFormActiveTab(tab);
               if (tab === 'category') setActiveScreen('category-manage');
             }}
             onCancel={() => {
@@ -221,18 +570,50 @@ export default function App() {
           />
         )}
 
-        {activeScreen === 'category-manage' && (
+        {activeScreen === 'exercise-form' && formActiveTab === 'student' && (
+          <StudentFormView
+            editingStudent={editingStudent}
+            onSaveStudent={handleSaveStudent}
+            onSwitchTab={(tab) => {
+              setFormActiveTab(tab);
+              if (tab === 'category') setActiveScreen('category-manage');
+            }}
+            onCancel={() => {
+              if (editingStudent) {
+                setActiveScreen('client-detail');
+              } else {
+                setActiveScreen('clients');
+              }
+            }}
+          />
+        )}
+
+        {/* Screen: CATEGORIES MANAGEMENT */}
+        {(activeScreen === 'category-manage' ||
+          (activeScreen === 'exercise-form' && formActiveTab === 'category')) && (
           <ManageCategoriesView
             categories={categories}
             exercises={exercises}
             onAddCategory={handleAddCategory}
             onDeleteCategory={handleDeleteCategory}
             onSwitchTab={(tab) => {
-              if (tab === 'exercise') setActiveScreen('exercise-form');
+              setFormActiveTab(tab);
+              if (tab === 'exercise' || tab === 'student') {
+                setActiveScreen('exercise-form');
+              }
             }}
           />
         )}
       </div>
+
+      {/* Quick Add Session Modal for Student */}
+      {schedulingStudent && (
+        <AddSessionModal
+          student={schedulingStudent}
+          onClose={() => setSchedulingStudent(null)}
+          onSaveSession={handleSaveNewSession}
+        />
+      )}
 
       {/* Toast Notification */}
       {toastMessage && (
@@ -245,10 +626,17 @@ export default function App() {
         </div>
       )}
 
-      {/* Bottom Navigation for Mobile */}
+      {/* Bottom Navigation */}
       <BottomNav
         activeScreen={activeScreen}
-        onNavigate={(screen) => setActiveScreen(screen)}
+        onNavigate={(screen) => {
+          if (screen === 'exercise-form') {
+            setEditingExercise(null);
+            setEditingStudent(null);
+          }
+          setActiveScreen(screen);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
     </div>
   );
