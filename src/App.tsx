@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ActiveScreen, Exercise, Category } from './types';
 import { INITIAL_CATEGORIES, INITIAL_EXERCISES } from './data/initialData';
+import { supabase } from './lib/supabaseClient';
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
 import { CatalogView } from './components/CatalogView';
@@ -9,52 +10,37 @@ import { NewExerciseView } from './components/NewExerciseView';
 import { ManageCategoriesView } from './components/ManageCategoriesView';
 import { CheckCircle2 } from 'lucide-react';
 
-const STORAGE_KEY_EXERCISES = 'alenka_pilates_exercises_v1';
-const STORAGE_KEY_CATEGORIES = 'alenka_pilates_categories_v1';
-
 export default function App() {
-  // Load initial state from LocalStorage or default datasets
-  const [exercises, setExercises] = useState<Exercise[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_EXERCISES);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error('Error loading saved exercises:', e);
-    }
-    return INITIAL_EXERCISES;
-  });
-
-  const [categories, setCategories] = useState<Category[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_CATEGORIES);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error('Error loading saved categories:', e);
-    }
-    return INITIAL_CATEGORIES;
-  });
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [activeScreen, setActiveScreen] = useState<ActiveScreen>('catalog');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Sync to local storage
+  // Load catalog from Supabase (shared across every visitor)
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_EXERCISES, JSON.stringify(exercises));
-    } catch (e) {
-      console.error('Error saving exercises:', e);
-    }
-  }, [exercises]);
+    const loadCatalog = async () => {
+      const [categoriesRes, exercisesRes] = await Promise.all([
+        supabase.from('categories').select('*'),
+        supabase.from('exercises').select('*').order('createdAt', { ascending: false }),
+      ]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(categories));
-    } catch (e) {
-      console.error('Error saving categories:', e);
-    }
-  }, [categories]);
+      if (categoriesRes.error || exercisesRes.error) {
+        console.error('Error loading catalog from Supabase:', categoriesRes.error || exercisesRes.error);
+        setCategories(INITIAL_CATEGORIES);
+        setExercises(INITIAL_EXERCISES);
+      } else {
+        setCategories(categoriesRes.data as Category[]);
+        setExercises(exercisesRes.data as Exercise[]);
+      }
+      setIsLoading(false);
+    };
+
+    loadCatalog();
+  }, []);
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -82,12 +68,18 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSaveExercise = (
+  const handleSaveExercise = async (
     exerciseData: Omit<Exercise, 'id' | 'createdAt'>,
     exerciseId?: string
   ) => {
     if (exerciseId) {
       // Editing existing
+      const { error } = await supabase.from('exercises').update(exerciseData).eq('id', exerciseId);
+      if (error) {
+        console.error('Error updating exercise:', error);
+        showToast('Erro ao atualizar exercício.');
+        return;
+      }
       setExercises((prev) =>
         prev.map((ex) =>
           ex.id === exerciseId
@@ -113,6 +105,12 @@ export default function App() {
         id: `ex-${Date.now()}`,
         createdAt: new Date().toISOString(),
       };
+      const { error } = await supabase.from('exercises').insert(newEx);
+      if (error) {
+        console.error('Error creating exercise:', error);
+        showToast('Erro ao cadastrar exercício.');
+        return;
+      }
       setExercises((prev) => [newEx, ...prev]);
       showToast('Novo exercício cadastrado!');
       setSelectedExercise(newEx);
@@ -120,29 +118,55 @@ export default function App() {
     }
   };
 
-  const handleDeleteExercise = (exerciseId: string) => {
+  const handleDeleteExercise = async (exerciseId: string) => {
+    const { error } = await supabase.from('exercises').delete().eq('id', exerciseId);
+    if (error) {
+      console.error('Error deleting exercise:', error);
+      showToast('Erro ao excluir exercício.');
+      return;
+    }
     setExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
     setSelectedExercise(null);
     setActiveScreen('catalog');
     showToast('Exercício excluído com sucesso.');
   };
 
-  const handleAddCategory = (categoryData: Omit<Category, 'id'>) => {
+  const handleAddCategory = async (categoryData: Omit<Category, 'id'>) => {
     const newCat: Category = {
       ...categoryData,
       id: `cat-${Date.now()}`,
     };
+    const { error } = await supabase.from('categories').insert(newCat);
+    if (error) {
+      console.error('Error creating category:', error);
+      showToast('Erro ao criar categoria.');
+      return;
+    }
     setCategories((prev) => [...prev, newCat]);
     showToast(`Categoria "${categoryData.name}" criada com sucesso!`);
   };
 
-  const handleDeleteCategory = (categoryId: string) => {
+  const handleDeleteCategory = async (categoryId: string) => {
     const cat = categories.find((c) => c.id === categoryId);
+    // The "categories" row deletion cascades to its exercises in the database.
+    const { error } = await supabase.from('categories').delete().eq('id', categoryId);
+    if (error) {
+      console.error('Error deleting category:', error);
+      showToast('Erro ao excluir categoria.');
+      return;
+    }
     setCategories((prev) => prev.filter((c) => c.id !== categoryId));
-    // Also remove associated exercises if any
     setExercises((prev) => prev.filter((ex) => ex.categoryId !== categoryId));
     showToast(`Categoria ${cat ? `"${cat.name}"` : ''} excluída.`);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f8fafa] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#00615f] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafa] text-[#191c1d] flex flex-col font-sans selection:bg-[#2b7a78] selection:text-[#befffc]">
