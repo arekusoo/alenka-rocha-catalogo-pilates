@@ -40,7 +40,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
         ? true
         : selectedPlanFilter === 'avulsa'
         ? student.planId === 'avulsa'
-        : student.planId !== 'avulsa';
+        : student.totalPlanClasses > 0 && student.planId !== 'avulsa';
 
     return matchesSearch && matchesPlan;
   });
@@ -145,8 +145,9 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredStudents.map((student) => {
+            const hasPlan = student.totalPlanClasses > 0;
             const isAvulsa = student.planId === 'avulsa';
-            const isLowClasses = student.remainingClasses <= 1;
+            const isLowClasses = hasPlan && student.remainingClasses <= 1;
 
             return (
               <div
@@ -194,28 +195,37 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
 
                   {/* Tags row: Remaining classes & Plan */}
                   <div className="flex flex-wrap items-center gap-2 my-2.5">
-                    {/* Remaining Classes Tag */}
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold ${
-                        isLowClasses
-                          ? 'bg-amber-50 text-amber-900 border border-amber-200'
-                          : 'bg-[#d0e4e3]/60 text-[#00615f] border border-[#00615f]/20'
-                      }`}
-                    >
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>{student.remainingClasses} {student.remainingClasses === 1 ? 'aula restante' : 'aulas restantes'}</span>
-                    </span>
+                    {hasPlan ? (
+                      <>
+                        {/* Remaining Classes Tag */}
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold ${
+                            isLowClasses
+                              ? 'bg-amber-50 text-amber-900 border border-amber-200'
+                              : 'bg-[#d0e4e3]/60 text-[#00615f] border border-[#00615f]/20'
+                          }`}
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{student.remainingClasses} {student.remainingClasses === 1 ? 'aula restante' : 'aulas restantes'}</span>
+                        </span>
 
-                    {/* Active Plan Tag */}
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${
-                        isAvulsa
-                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                          : 'bg-[#f2f4f4] text-[#3f4948] border border-[#bec9c7]/50'
-                      }`}
-                    >
-                      {isAvulsa ? 'Aula Avulsa' : student.planName.split('–')[0].trim()}
-                    </span>
+                        {/* Active Plan Tag */}
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${
+                            isAvulsa
+                              ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                              : 'bg-[#f2f4f4] text-[#3f4948] border border-[#bec9c7]/50'
+                          }`}
+                        >
+                          {isAvulsa ? 'Aula Avulsa' : student.planName.split('–')[0].trim()}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-[#f2f4f4] text-[#6f7978] border border-[#bec9c7]/50">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Nenhuma aula agendada</span>
+                      </span>
+                    )}
                   </div>
 
                   {/* Weekly schedule if available */}

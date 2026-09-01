@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ActiveScreen, Exercise, Category, Student, ClassSession, NewItemTab } from './types';
+import { ActiveScreen, Exercise, Category, Student, ClassSession, NewItemTab, PlanOption } from './types';
 import { INITIAL_CATEGORIES, INITIAL_EXERCISES } from './data/initialData';
 import { supabase } from './lib/supabaseClient';
 import { Navbar } from './components/Navbar';
@@ -10,9 +10,9 @@ import { NewExerciseView } from './components/NewExerciseView';
 import { ManageCategoriesView } from './components/ManageCategoriesView';
 import { ClientsView } from './components/ClientsView';
 import { ClientDetailView } from './components/ClientDetailView';
-import { StudentFormView, ScheduledClassInput } from './components/StudentFormView';
+import { StudentFormView } from './components/StudentFormView';
 import { AgendaView } from './components/AgendaView';
-import { AddSessionModal } from './components/AddSessionModal';
+import { ScheduleSessionsModal, ScheduledClassInput } from './components/ScheduleSessionsModal';
 import { CheckCircle2 } from 'lucide-react';
 
 export default function App() {
@@ -214,8 +214,7 @@ export default function App() {
 
   const handleSaveStudent = async (
     studentData: Omit<Student, 'id' | 'createdAt'>,
-    studentId?: string,
-    scheduledClasses?: ScheduledClassInput[]
+    studentId?: string
   ) => {
     if (studentId) {
       // Editing existing
@@ -277,56 +276,12 @@ export default function App() {
         return;
       }
 
-      // Create all scheduled class sessions configured in the form
-      let newSessions: ClassSession[];
-      if (scheduledClasses && scheduledClasses.length > 0) {
-        newSessions = scheduledClasses.map((cls, idx) => ({
-          id: `session-${Date.now()}-${idx}`,
-          studentId: newStudentId,
-          studentName: newStudent.name,
-          studentPhone: newStudent.phone,
-          studentLimitations: newStudent.limitations,
-          date: cls.date,
-          time: cls.time,
-          classNumber: idx + 1,
-          totalClasses: newStudent.totalPlanClasses,
-          descriptionLabel:
-            newStudent.planId === 'avulsa'
-              ? 'Aula Avulsa'
-              : `Aula ${idx + 1} de ${newStudent.totalPlanClasses}`,
-          status: 'scheduled',
-        }));
-      } else {
-        const todayStr = new Date().toISOString().split('T')[0];
-        newSessions = [
-          {
-            id: `session-${Date.now()}`,
-            studentId: newStudentId,
-            studentName: newStudent.name,
-            studentPhone: newStudent.phone,
-            studentLimitations: newStudent.limitations,
-            date: todayStr,
-            time: '08:00',
-            classNumber: 1,
-            totalClasses: newStudent.totalPlanClasses,
-            descriptionLabel:
-              newStudent.planId === 'avulsa' ? 'Aula Avulsa' : `Aula 1 de ${newStudent.totalPlanClasses}`,
-            status: 'scheduled',
-          },
-        ];
-      }
-
-      const { error: sessionsError } = await supabase.from('class_sessions').insert(newSessions);
-      if (sessionsError) {
-        console.error('Error creating sessions for student:', sessionsError);
-        showToast('Cliente cadastrado, mas houve um erro ao agendar as aulas.');
-      }
-
       setStudents((prev) => [newStudent, ...prev]);
-      setSessions((prev) => [...newSessions, ...prev]);
       showToast(`Aluno ${newStudent.name} cadastrado com sucesso!`);
       setSelectedStudent(newStudent);
       setActiveScreen('clients');
+      // Offer to schedule a plan/class right away; the studio owner can skip it.
+      setSchedulingStudent(newStudent);
     }
   };
 
@@ -450,19 +405,78 @@ export default function App() {
     showToast(`Aula de ${session.studentName} reagendada com sucesso!`);
   };
 
-  const handleSaveNewSession = async (sessionData: Omit<ClassSession, 'id'>) => {
-    const newSession: ClassSession = {
-      ...sessionData,
-      id: `session-${Date.now()}`,
+  // Schedules a batch of classes for a student, either as their first plan
+  // (student has no classes yet) or as extra classes added on top of an
+  // already active plan (the existing plan is kept; only the class count and
+  // descriptions grow).
+  const handleScheduleSessions = async (
+    student: Student,
+    plan: PlanOption,
+    slots: ScheduledClassInput[]
+  ) => {
+    const hasActivePlan = student.totalPlanClasses > 0;
+    const startingClassNumber = hasActivePlan ? student.totalPlanClasses + 1 : 1;
+    const newTotal = hasActivePlan ? student.totalPlanClasses + slots.length : plan.totalClasses;
+
+    const dayNames = [
+      'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado',
+    ];
+    const getDayName = (dateStr: string) => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return dayNames[new Date(year, month - 1, day).getDay()] || '';
     };
-    const { error } = await supabase.from('class_sessions').insert(newSession);
-    if (error) {
-      console.error('Error creating session:', error);
-      showToast('Erro ao agendar aula.');
+
+    const newSessions: ClassSession[] = slots.map((slot, idx) => ({
+      id: `session-${Date.now()}-${idx}`,
+      studentId: student.id,
+      studentName: student.name,
+      studentPhone: student.phone,
+      studentLimitations: student.limitations,
+      date: slot.date,
+      time: slot.time,
+      classNumber: startingClassNumber + idx,
+      totalClasses: newTotal,
+      descriptionLabel:
+        plan.id === 'avulsa' && !hasActivePlan
+          ? 'Aula Avulsa'
+          : `Aula ${startingClassNumber + idx} de ${newTotal}`,
+      status: 'scheduled',
+    }));
+
+    const { error: sessionsError } = await supabase.from('class_sessions').insert(newSessions);
+    if (sessionsError) {
+      console.error('Error scheduling sessions:', sessionsError);
+      showToast('Erro ao agendar aulas.');
       return;
     }
-    setSessions((prev) => [newSession, ...prev]);
-    showToast(`Aula agendada com sucesso para ${sessionData.studentName}!`);
+
+    const daysFound = Array.from(new Set(slots.map((s) => getDayName(s.date)))).filter(Boolean);
+    const weeklySchedule =
+      daysFound.length > 0 ? `${daysFound.join(' e ')} às ${slots[0]?.time || '08:00'}` : plan.name;
+
+    const studentUpdate: Partial<Student> = hasActivePlan
+      ? { totalPlanClasses: newTotal, remainingClasses: student.remainingClasses + slots.length }
+      : {
+          planId: plan.id,
+          planName: plan.name,
+          totalPlanClasses: newTotal,
+          remainingClasses: newTotal,
+          weeklySchedule,
+          startDate: slots[0]?.date,
+        };
+
+    const { error: studentError } = await supabase.from('students').update(studentUpdate).eq('id', student.id);
+    if (studentError) {
+      console.error('Error updating student after scheduling:', studentError);
+    }
+
+    setStudents((prev) => prev.map((s) => (s.id === student.id ? { ...s, ...studentUpdate } : s)));
+    if (selectedStudent && selectedStudent.id === student.id) {
+      setSelectedStudent((prev) => (prev ? { ...prev, ...studentUpdate } : null));
+    }
+    setSessions((prev) => [...newSessions, ...prev]);
+    setSchedulingStudent(null);
+    showToast(`Aulas agendadas com sucesso para ${student.name}!`);
   };
 
   if (isLoading) {
@@ -606,12 +620,12 @@ export default function App() {
         )}
       </div>
 
-      {/* Quick Add Session Modal for Student */}
+      {/* Schedule Plan / Classes Modal for Student */}
       {schedulingStudent && (
-        <AddSessionModal
+        <ScheduleSessionsModal
           student={schedulingStudent}
           onClose={() => setSchedulingStudent(null)}
-          onSaveSession={handleSaveNewSession}
+          onConfirm={(plan, slots) => handleScheduleSessions(schedulingStudent, plan, slots)}
         />
       )}
 
@@ -619,9 +633,9 @@ export default function App() {
       {toastMessage && (
         <div
           id="app-toast-notification"
-          className="fixed top-20 right-4 md:right-8 z-50 bg-[#00615f] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-sm font-medium animate-in fade-in slide-in-from-top-4 duration-200"
+          className="fixed top-20 right-4 md:right-8 z-50 bg-white text-[#2a2a2a] border border-[#e5e5e5] px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-sm font-medium animate-in fade-in slide-in-from-top-4 duration-200"
         >
-          <CheckCircle2 className="w-5 h-5 text-[#befffc]" />
+          <CheckCircle2 className="w-5 h-5 text-[#00615f]" />
           <span>{toastMessage}</span>
         </div>
       )}

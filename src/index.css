@@ -22,3 +22,14 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Prevent iOS/Android from auto-zooming the page when a form field is
+   focused: mobile browsers zoom in whenever a focused input's font-size
+   is under 16px. */
+@media (max-width: 767px) {
+  input, select, textarea {
+    /* Must win over Tailwind's text-xs/text-sm utility classes, which are
+       more specific than a bare element selector. */
+    font-size: 16px !important;
+  }
+}
+

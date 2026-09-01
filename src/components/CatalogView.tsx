@@ -112,7 +112,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar exercício..."
-            className="w-full pl-10 pr-4 py-2.5 bg-[#f8fafa] border border-[#bec9c7] rounded-full text-sm text-[#191c1d] placeholder-[#6f7978] focus:bg-white focus:border-[#00615f] focus:ring-1 focus:ring-[#00615f] outline-none transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#bec9c7]/80 rounded-full text-sm text-[#191c1d] placeholder-[#6f7978] focus:border-[#00615f] focus:ring-1 focus:ring-[#00615f] outline-none transition-all shadow-2xs"
           />
           {searchQuery && (
             <button
@@ -129,13 +129,13 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           <button
             id="filter-intensity-btn"
             onClick={() => setShowIntensityDropdown(!showIntensityDropdown)}
-            className={`flex items-center gap-2 px-4 py-2.5 border rounded-full text-sm font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
               selectedIntensity !== 'all'
-                ? 'bg-[#00615f] text-white border-[#00615f]'
-                : 'bg-[#ffffff] text-[#191c1d] border-[#bec9c7] hover:bg-[#eceeee]'
+                ? 'bg-[#00615f] text-white shadow-2xs'
+                : 'bg-[#f2f4f4] text-[#506261] hover:bg-[#eceeee]'
             }`}
           >
-            <SlidersHorizontal className="w-4 h-4" />
+            <SlidersHorizontal className="w-3.5 h-3.5" />
             <span>
               {selectedIntensity === 'all'
                 ? 'Intensidade'
@@ -222,10 +222,10 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
       <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar">
         <button
           onClick={() => setSelectedCategory('all')}
-          className={`px-5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
             selectedCategory === 'all'
-              ? 'bg-[#d0e4e3] text-[#00615f] border-2 border-[#00615f] font-semibold shadow-xs'
-              : 'bg-[#ffffff] text-[#3f4948] border border-[#bec9c7] hover:bg-[#eceeee]'
+              ? 'bg-[#00615f] text-white shadow-2xs'
+              : 'bg-[#f2f4f4] text-[#506261] hover:bg-[#eceeee]'
           }`}
         >
           Todos
@@ -238,10 +238,10 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
                 isSelected
-                  ? 'bg-[#d0e4e3] text-[#00615f] border-2 border-[#00615f] font-semibold shadow-xs'
-                  : 'bg-[#ffffff] text-[#3f4948] border border-[#bec9c7] hover:bg-[#eceeee]'
+                  ? 'bg-[#00615f] text-white shadow-2xs'
+                  : 'bg-[#f2f4f4] text-[#506261] hover:bg-[#eceeee]'
               }`}
             >
               <ExerciseIcon name={cat.icon} size={14} />

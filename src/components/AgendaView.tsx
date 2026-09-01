@@ -268,28 +268,28 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
         </button>
       </div>
 
-      {/* Header Description & Histórico button */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#191c1d] tracking-tight flex items-center gap-2">
-            {activeTab === 'monthly'
-              ? 'Relação Mensal de Clientes'
-              : dailyViewMode === 'history'
-              ? 'Histórico de Aulas'
-              : 'Agenda de Aulas'}
-          </h1>
-          <p className="text-sm text-[#506261] mt-0.5">
-            {activeTab === 'monthly'
-              ? 'Controle de frequência e quantidade de aulas realizadas por cliente a cada mês.'
-              : dailyViewMode === 'history'
-              ? 'Aulas concluídas e datas anteriores registradas.'
-              : 'Controle de quem esteve presencial para hoje e próximos dias.'}
-          </p>
-        </div>
+      {/* Header Description */}
+      <div className="text-center sm:text-left">
+        <h1 className="text-2xl md:text-3xl font-bold text-[#191c1d] tracking-tight flex items-center justify-center sm:justify-start gap-2">
+          {activeTab === 'monthly'
+            ? 'Relação Mensal de Clientes'
+            : dailyViewMode === 'history'
+            ? 'Histórico de Aulas'
+            : 'Agenda de Aulas'}
+        </h1>
+        <p className="text-sm text-[#506261] mt-0.5">
+          {activeTab === 'monthly'
+            ? 'Controle de frequência e quantidade de aulas realizadas por cliente a cada mês.'
+            : dailyViewMode === 'history'
+            ? 'Aulas concluídas e datas anteriores registradas.'
+            : 'Controle de quem esteve presencial para hoje e próximos dias.'}
+        </p>
+      </div>
 
-        {/* Botão de Histórico / Próximas ao lado do título e descrição */}
-        {activeTab === 'daily' && (
-          <div className="flex items-center gap-1.5 bg-[#f2f4f4] p-1 rounded-xl border border-[#bec9c7]/60 self-start sm:self-auto shrink-0 shadow-2xs">
+      {/* Botão de Histórico / Próximas centralizado */}
+      {activeTab === 'daily' && (
+        <div className="flex justify-center">
+          <div className="flex items-center gap-1.5 bg-[#f2f4f4] p-1 rounded-xl border border-[#bec9c7]/60 shrink-0 shadow-2xs">
             <button
               onClick={() => setDailyViewMode('upcoming')}
               className={`px-3 py-2 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -334,8 +334,8 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
               </span>
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* TAB 1: DAILY AGENDA */}
       {activeTab === 'daily' && (

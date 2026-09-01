@@ -50,6 +50,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = ({
 
   const currentPlan: PlanOption | undefined = STUDENT_PLANS.find((p) => p.id === student.planId);
   const isAvulsa = student.planId === 'avulsa';
+  const hasPlan = student.totalPlanClasses > 0;
 
   const formatPhone = (phone: string) => {
     const clean = phone.replace(/\D/g, '');
@@ -148,36 +149,53 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = ({
           <div className="self-start sm:self-auto">
             <span
               className={`inline-block px-3.5 py-1.5 rounded-full text-xs font-bold ${
-                isAvulsa
+                !hasPlan
+                  ? 'bg-[#f2f4f4] text-[#6f7978] border border-[#bec9c7]/50'
+                  : isAvulsa
                   ? 'bg-purple-100 text-purple-800 border border-purple-200'
                   : 'bg-[#d0e4e3] text-[#00615f] border border-[#00615f]/20'
               }`}
             >
-              {isAvulsa ? 'Aula Avulsa' : student.planName}
+              {!hasPlan ? 'Sem plano definido' : isAvulsa ? 'Aula Avulsa' : student.planName}
             </span>
           </div>
         </div>
 
         {/* Clean Layout for Aulas Restantes */}
-        <div className="bg-[#f4f7f6] p-4 sm:p-5 rounded-2xl border border-[#bec9c7]/50 flex items-center justify-between gap-4">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#506261] block mb-0.5">
-              Aulas Restantes
-            </span>
-            <span className="text-xs sm:text-sm font-semibold text-[#191c1d]">
-              {student.totalPlanClasses} {student.totalPlanClasses === 1 ? 'aula no plano' : 'aulas no plano'}
-            </span>
-          </div>
+        {hasPlan ? (
+          <div className="bg-[#f4f7f6] p-4 sm:p-5 rounded-2xl border border-[#bec9c7]/50 flex items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#506261] block mb-0.5">
+                Aulas Restantes
+              </span>
+              <span className="text-xs sm:text-sm font-semibold text-[#191c1d]">
+                {student.totalPlanClasses} {student.totalPlanClasses === 1 ? 'aula no plano' : 'aulas no plano'}
+              </span>
+            </div>
 
-          <div className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-[#bec9c7]/40 shadow-2xs">
-            <span className="text-2xl sm:text-3xl font-extrabold text-[#00615f] leading-none">
-              {student.remainingClasses}
-            </span>
-            <span className="text-xs font-semibold text-[#506261] border-l border-[#eceeee] pl-2.5 leading-tight">
-              de {student.totalPlanClasses} restantes
-            </span>
+            <div className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-[#bec9c7]/40 shadow-2xs">
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#00615f] leading-none">
+                {student.remainingClasses}
+              </span>
+              <span className="text-xs font-semibold text-[#506261] border-l border-[#eceeee] pl-2.5 leading-tight">
+                de {student.totalPlanClasses} restantes
+              </span>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-[#f4f7f6] p-4 sm:p-5 rounded-2xl border border-[#bec9c7]/50 flex items-center justify-between gap-4 flex-wrap">
+            <span className="text-sm text-[#506261]">
+              Este cliente ainda não tem um plano ou aula agendada.
+            </span>
+            <button
+              onClick={() => onAddSessionForStudent(student)}
+              className="text-xs md:text-sm font-semibold text-white bg-[#00615f] hover:bg-[#00504e] px-4 py-2 rounded-full transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Agendar Plano</span>
+            </button>
+          </div>
+        )}
 
         {/* Limitações do Cliente (Simples e Direto) */}
         {student.limitations ? (
