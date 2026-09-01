@@ -114,18 +114,6 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({
         </button>
       </div>
 
-      {/* Detailed Notes / Execution Instructions */}
-      {exercise.detailedNotes && (
-        <div className="bg-[#f2f4f4] rounded-2xl p-5 md:p-6 border border-[#bec9c7]/40 flex flex-col gap-3">
-          <h3 className="font-bold text-base text-[#00615f]">
-            Guia de Execução & Postura
-          </h3>
-          <div className="text-sm md:text-base text-[#3f4948] whitespace-pre-line leading-relaxed">
-            {exercise.detailedNotes}
-          </div>
-        </div>
-      )}
-
       {/* Image Fullscreen Modal */}
       {isImageFullscreen && (
         <div

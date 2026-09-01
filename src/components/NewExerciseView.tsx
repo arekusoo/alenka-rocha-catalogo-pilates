@@ -33,7 +33,6 @@ export const NewExerciseView: React.FC<NewExerciseViewProps> = ({
   );
   const [typeTag, setTypeTag] = useState(editingExercise?.typeTag || 'Pilates Solo');
   const [description, setDescription] = useState(editingExercise?.description || '');
-  const [detailedNotes, setDetailedNotes] = useState(editingExercise?.detailedNotes || '');
   const [selectedIcon, setSelectedIcon] = useState(editingExercise?.icon || 'person');
 
   // Image source modes: 'url' | 'upload'
@@ -54,7 +53,6 @@ export const NewExerciseView: React.FC<NewExerciseViewProps> = ({
       setIntensity(editingExercise.intensity);
       setTypeTag(editingExercise.typeTag || 'Pilates Solo');
       setDescription(editingExercise.description);
-      setDetailedNotes(editingExercise.detailedNotes || '');
       setSelectedIcon(editingExercise.icon);
       setImageUrl(editingExercise.imageUrl);
     }
@@ -115,7 +113,6 @@ export const NewExerciseView: React.FC<NewExerciseViewProps> = ({
         intensity,
         typeTag: typeTag.trim() || 'Pilates Solo',
         description: description.trim(),
-        detailedNotes: detailedNotes.trim(),
         icon: selectedIcon,
         imageUrl:
           imageUrl.trim() ||
@@ -307,24 +304,6 @@ export const NewExerciseView: React.FC<NewExerciseViewProps> = ({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Ex: Um exercício fundamental para o controle da respiração e fortalecimento do core..."
-            className="bg-[#ffffff] border border-[#bec9c7] rounded-xl px-4 py-3 text-sm md:text-base text-[#191c1d] placeholder-[#6f7978] focus:border-[#00615f] focus:ring-1 focus:ring-[#00615f] outline-none transition-colors shadow-2xs resize-y"
-          />
-        </div>
-
-        {/* Guia de Execução / Notas detalhadas */}
-        <div className="flex flex-col space-y-1.5">
-          <label
-            htmlFor="notas_detalhadas"
-            className="text-sm font-semibold text-[#191c1d]"
-          >
-            Passo a Passo / Instruções Posturais (Opcional)
-          </label>
-          <textarea
-            id="notas_detalhadas"
-            rows={3}
-            value={detailedNotes}
-            onChange={(e) => setDetailedNotes(e.target.value)}
-            placeholder="1. Posição inicial...&#10;2. Respiração...&#10;3. Alinhamento escapular..."
             className="bg-[#ffffff] border border-[#bec9c7] rounded-xl px-4 py-3 text-sm md:text-base text-[#191c1d] placeholder-[#6f7978] focus:border-[#00615f] focus:ring-1 focus:ring-[#00615f] outline-none transition-colors shadow-2xs resize-y"
           />
         </div>
