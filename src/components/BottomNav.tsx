@@ -13,7 +13,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 }) => {
   const isCatalog = activeScreen === 'catalog' || activeScreen === 'exercise-detail';
   const isAgenda = activeScreen === 'agenda';
-  const isClients = activeScreen === 'clients' || activeScreen === 'client-detail';
+  const isClients =
+    activeScreen === 'clients' ||
+    activeScreen === 'client-detail' ||
+    activeScreen === 'schedule-sessions';
   const isAddOrManage = activeScreen === 'exercise-form' || activeScreen === 'category-manage';
 
   return (

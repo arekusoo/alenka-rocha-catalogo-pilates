@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Search,
   Check,
   CalendarDays,
@@ -35,9 +36,10 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   onSelectStudent,
 }) => {
   const [activeTab, setActiveTab] = useState<'daily' | 'monthly'>('daily');
-  const [dailyViewMode, setDailyViewMode] = useState<'upcoming' | 'history'>('upcoming');
+  const [dailyViewMode, setDailyViewMode] = useState<'upcoming' | 'history' | 'pending'>('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMonthOffset, setSelectedMonthOffset] = useState(0); // 0 = current month, -1 = previous, +1 = next
+  const [pendingStudentFilter, setPendingStudentFilter] = useState<string>('all');
 
   // Reschedule modal state
   const [reschedulingSession, setReschedulingSession] = useState<ClassSession | null>(null);
@@ -148,6 +150,39 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
 
     return groups;
   }, [sessions, searchQuery, dailyViewMode, todayStr]);
+
+  // Sessions that should already have happened but were never marked "Cliente fez"
+  const allPendingSessions = useMemo(() => {
+    return sessions.filter((s) => s.status !== 'completed' && s.date < todayStr);
+  }, [sessions, todayStr]);
+
+  // Distinct clients that have at least one pending session, for the filter selector
+  const pendingStudentOptions = useMemo(() => {
+    const ids = Array.from(new Set(allPendingSessions.map((s) => s.studentId)));
+    return ids
+      .map((id) => students.find((st) => st.id === id))
+      .filter((st): st is Student => !!st)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allPendingSessions, students]);
+
+  // Pending sessions filtered by client, grouped by date (oldest first)
+  const groupedPendingSessions = useMemo<Record<string, ClassSession[]>>(() => {
+    const filtered =
+      pendingStudentFilter === 'all'
+        ? allPendingSessions
+        : allPendingSessions.filter((s) => s.studentId === pendingStudentFilter);
+
+    const sorted = [...filtered].sort(
+      (a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime()
+    );
+
+    const groups: Record<string, ClassSession[]> = {};
+    sorted.forEach((session) => {
+      if (!groups[session.date]) groups[session.date] = [];
+      groups[session.date].push(session);
+    });
+    return groups;
+  }, [allPendingSessions, pendingStudentFilter]);
 
   // Current month reference for monthly report
   const selectedDateMonth = useMemo(() => {
@@ -265,6 +300,8 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
           <h1 className="text-2xl md:text-3xl font-bold text-[#191c1d] tracking-tight">
             {activeTab === 'monthly'
               ? 'Relação Mensal de Clientes'
+              : dailyViewMode === 'pending'
+              ? 'Aulas Pendentes'
               : dailyViewMode === 'history'
               ? 'Histórico de Aulas'
               : 'Agenda de Aulas'}
@@ -272,6 +309,8 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
           <p className="text-sm text-[#506261] mt-0.5">
             {activeTab === 'monthly'
               ? 'Controle de frequência e quantidade de aulas realizadas por cliente a cada mês.'
+              : dailyViewMode === 'pending'
+              ? 'Aulas que já deveriam ter acontecido e ainda não foram marcadas como realizadas.'
               : dailyViewMode === 'history'
               ? 'Aulas concluídas e datas anteriores registradas.'
               : 'Controle de quem esteve presencial para hoje e próximos dias.'}
@@ -305,12 +344,25 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
               <History className="w-3.5 h-3.5" />
               <span>Histórico</span>
             </button>
+
+            <button
+              onClick={() => setDailyViewMode('pending')}
+              className={`px-3.5 py-2 rounded-full text-xs md:text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                dailyViewMode === 'pending'
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'text-amber-700 hover:bg-amber-50'
+              }`}
+              title="Exibir aulas atrasadas que ainda não foram confirmadas"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>Pendentes</span>
+            </button>
           </div>
         )}
       </div>
 
-      {/* TAB 1: DAILY AGENDA */}
-      {activeTab === 'daily' && (
+      {/* TAB 1: DAILY AGENDA (Próximas / Histórico) */}
+      {activeTab === 'daily' && dailyViewMode !== 'pending' && (
         <div className="space-y-6">
           {/* Search bar */}
           <div className="relative">
@@ -516,6 +568,138 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                   </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Pendentes (dentro da Agenda Diária: aulas que já passaram e não foram marcadas como feitas) */}
+      {activeTab === 'daily' && dailyViewMode === 'pending' && (
+        <div className="space-y-6">
+          {/* Client filter selector */}
+          <div className="relative">
+            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#506261] pointer-events-none" />
+            <select
+              value={pendingStudentFilter}
+              onChange={(e) => setPendingStudentFilter(e.target.value)}
+              className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white border border-[#bec9c7]/80 rounded-full text-sm text-[#191c1d] focus:border-[#00615f] focus:ring-1 focus:ring-[#00615f] outline-none transition-all shadow-2xs cursor-pointer appearance-none"
+            >
+              <option value="all">
+                Todos os clientes ({allPendingSessions.length} {allPendingSessions.length === 1 ? 'aula' : 'aulas'})
+              </option>
+              {pendingStudentOptions.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#506261] pointer-events-none" />
+          </div>
+
+          {Object.keys(groupedPendingSessions).length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center border border-[#bec9c7]/40 shadow-xs flex flex-col items-center">
+              <CalendarCheck className="w-12 h-12 text-[#bec9c7] mb-3" />
+              <h3 className="text-base font-bold text-[#191c1d]">
+                Nenhuma aula pendente
+              </h3>
+              <p className="text-sm text-[#506261] mt-1 max-w-sm">
+                {pendingStudentFilter === 'all'
+                  ? 'Não há aulas atrasadas sem confirmação de presença. Tudo em dia!'
+                  : 'Este cliente não tem aulas atrasadas sem confirmação de presença.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {(Object.entries(groupedPendingSessions) as [string, ClassSession[]][]).map(
+                ([dateStr, dateSessions]) => {
+                  const headerInfo = formatDateHeader(dateStr);
+
+                  return (
+                    <div key={dateStr} className="space-y-3">
+                      <div className="flex items-baseline justify-between px-3 py-2 rounded-xl border bg-amber-50 border-amber-200">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-base font-bold tracking-tight text-amber-900">
+                            {headerInfo.title}
+                          </span>
+                          <span className="text-xs text-amber-800/80 font-medium">
+                            • {headerInfo.subtitle}
+                          </span>
+                        </div>
+                        <span className="text-xs font-semibold text-amber-900 bg-white px-2.5 py-0.5 rounded-full border border-amber-200">
+                          {dateSessions.length} {dateSessions.length === 1 ? 'aula' : 'aulas'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {dateSessions.map((session) => {
+                          const matchingStudent = students.find((s) => s.id === session.studentId);
+                          const limitations = session.studentLimitations || matchingStudent?.limitations;
+
+                          return (
+                            <div
+                              key={session.id}
+                              className="bg-white rounded-2xl p-4 md:p-5 border border-amber-200 shadow-xs hover:border-amber-400 transition-all"
+                            >
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-start gap-3.5">
+                                  <div className="px-3 py-2 rounded-xl flex flex-col items-center justify-center shrink-0 font-bold bg-amber-100 text-amber-900">
+                                    <Clock className="w-3.5 h-3.5 mb-0.5 opacity-80" />
+                                    <span className="text-sm md:text-base leading-none">
+                                      {session.time}
+                                    </span>
+                                  </div>
+
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <h3
+                                        onClick={() =>
+                                          matchingStudent && onSelectStudent?.(matchingStudent)
+                                        }
+                                        className="text-base md:text-lg font-bold text-[#191c1d] hover:text-[#00615f] cursor-pointer transition-colors"
+                                      >
+                                        {session.studentName}
+                                      </h3>
+                                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200">
+                                        Pendente
+                                      </span>
+                                    </div>
+
+                                    <p className="text-xs md:text-sm font-semibold text-[#00615f]">
+                                      {session.descriptionLabel ||
+                                        `Aula ${session.classNumber} de ${session.totalClasses}`}
+                                    </p>
+
+                                    {limitations && (
+                                      <div className="flex items-center gap-1.5 text-xs text-[#506261] bg-[#fff9f0] border border-amber-200/80 px-2.5 py-1 rounded-lg mt-1.5 max-w-lg">
+                                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                        <span className="line-clamp-1">
+                                          <strong>Limitações:</strong> {limitations}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Only action available: Reagendar */}
+                                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                                  <button
+                                    onClick={() => handleOpenReschedule(session)}
+                                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#00615f] hover:bg-[#00504e] transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                                    title="Mudar data ou horário da aula"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    <span>Reagendar</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+              )}
             </div>
           )}
         </div>

@@ -12,7 +12,7 @@ import { ClientsView } from './components/ClientsView';
 import { ClientDetailView } from './components/ClientDetailView';
 import { StudentFormView } from './components/StudentFormView';
 import { AgendaView } from './components/AgendaView';
-import { ScheduleSessionsModal, ScheduledClassInput } from './components/ScheduleSessionsModal';
+import { ScheduleSessionsView, ScheduledClassInput } from './components/ScheduleSessionsView';
 import { CheckCircle2 } from 'lucide-react';
 
 export default function App() {
@@ -30,9 +30,6 @@ export default function App() {
 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-
-  // Quick Add Session modal for a specific student
-  const [schedulingStudent, setSchedulingStudent] = useState<Student | null>(null);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -279,9 +276,8 @@ export default function App() {
       setStudents((prev) => [newStudent, ...prev]);
       showToast(`Aluno ${newStudent.name} cadastrado com sucesso!`);
       setSelectedStudent(newStudent);
-      setActiveScreen('clients');
       // Offer to schedule a plan/class right away; the studio owner can skip it.
-      setSchedulingStudent(newStudent);
+      setActiveScreen('schedule-sessions');
     }
   };
 
@@ -475,7 +471,7 @@ export default function App() {
       setSelectedStudent((prev) => (prev ? { ...prev, ...studentUpdate } : null));
     }
     setSessions((prev) => [...newSessions, ...prev]);
-    setSchedulingStudent(null);
+    setActiveScreen('client-detail');
     showToast(`Aulas agendadas com sucesso para ${student.name}!`);
   };
 
@@ -547,8 +543,21 @@ export default function App() {
             onEdit={handleEditStudent}
             onRescheduleSession={() => setActiveScreen('agenda')}
             onConfirmAttendance={handleConfirmAttendance}
-            onAddSessionForStudent={(student) => setSchedulingStudent(student)}
+            onAddSessionForStudent={(student) => {
+              setSelectedStudent(student);
+              setActiveScreen('schedule-sessions');
+            }}
             onDeleteStudent={handleDeleteStudent}
+          />
+        )}
+
+        {/* Screen: SCHEDULE SESSIONS (plan + agenda) */}
+        {activeScreen === 'schedule-sessions' && selectedStudent && (
+          <ScheduleSessionsView
+            student={selectedStudent}
+            onCancel={() => setActiveScreen('client-detail')}
+            onBackToClients={() => setActiveScreen('clients')}
+            onConfirm={(plan, slots) => handleScheduleSessions(selectedStudent, plan, slots)}
           />
         )}
 
@@ -617,15 +626,6 @@ export default function App() {
           />
         )}
       </div>
-
-      {/* Schedule Plan / Classes Modal for Student */}
-      {schedulingStudent && (
-        <ScheduleSessionsModal
-          student={schedulingStudent}
-          onClose={() => setSchedulingStudent(null)}
-          onConfirm={(plan, slots) => handleScheduleSessions(schedulingStudent, plan, slots)}
-        />
-      )}
 
       {/* Toast Notification */}
       {toastMessage && (

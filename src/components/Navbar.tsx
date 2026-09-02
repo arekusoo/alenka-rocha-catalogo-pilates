@@ -65,6 +65,25 @@ export const Navbar: React.FC<NavbarProps> = ({
     );
   }
 
+  if (activeScreen === 'schedule-sessions') {
+    return (
+      <header className="bg-[#f8fafa] flex justify-between items-center px-4 md:px-8 w-full h-16 top-0 z-40 sticky border-b border-[#eceeee]/80">
+        <button
+          id="schedule-back-btn"
+          onClick={() => onNavigate('client-detail')}
+          className="text-[#3f4948] hover:bg-[#eceeee] rounded-full p-2.5 transition-transform active:scale-95 flex items-center justify-center"
+          aria-label="Voltar para a ficha do cliente"
+        >
+          <ArrowLeft className="w-5 h-5 text-[#191c1d]" />
+        </button>
+        <span className="text-sm font-semibold text-[#506261] tracking-wide">
+          Agendar Aulas
+        </span>
+        <div className="w-10"></div>
+      </header>
+    );
+  }
+
   if (activeScreen === 'exercise-form' || activeScreen === 'category-manage') {
     return (
       <header className="bg-[#f8fafa] flex justify-between items-center px-4 md:px-8 w-full h-16 top-0 z-40 sticky border-b border-[#eceeee]/80">

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { ExternalLink, Trash2, Video, Dumbbell, Layers, PlayCircle, Maximize2 } from 'lucide-react';
+import { ExternalLink, Trash2, Dumbbell, Layers, Maximize2 } from 'lucide-react';
 import { Exercise } from '../types';
-import { VideoModal } from './VideoModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { ExerciseIcon } from './ExerciseIcon';
 
@@ -18,7 +17,6 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isImageFullscreen, setIsImageFullscreen] = useState(false);
 
@@ -92,14 +90,16 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({
 
       {/* Action Button: Ver Vídeo */}
       <div className="pt-2">
-        <button
+        <a
           id="btn-ver-video"
-          onClick={() => setIsVideoModalOpen(true)}
-          className="w-full bg-[#00615f] hover:bg-[#00504e] active:scale-98 text-white font-semibold text-base py-4 px-6 rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2.5 group"
+          href={exercise.videoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full bg-[#00615f] hover:bg-[#00504e] active:scale-98 text-white font-semibold text-base py-4 px-6 rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2.5 group cursor-pointer"
         >
           <ExternalLink className="w-5 h-5 group-hover:scale-110 transition-transform" />
           <span>Ver vídeo</span>
-        </button>
+        </a>
       </div>
 
       {/* Delete Button */}
@@ -128,14 +128,6 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({
           />
         </div>
       )}
-
-      {/* Video Modal */}
-      <VideoModal
-        isOpen={isVideoModalOpen}
-        onClose={() => setIsVideoModalOpen(false)}
-        videoUrl={exercise.videoUrl}
-        title={exercise.name}
-      />
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmModal

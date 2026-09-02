@@ -69,6 +69,7 @@ export type ActiveScreen =
   | 'agenda'
   | 'clients'
   | 'client-detail'
+  | 'schedule-sessions'
   | 'exercise-detail'
   | 'exercise-form'
   | 'category-manage';
