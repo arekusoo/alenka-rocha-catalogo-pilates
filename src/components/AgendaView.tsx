@@ -466,9 +466,9 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                 : 'border-[#bec9c7]/60 shadow-xs hover:border-[#00615f]/50'
                             }`}
                           >
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-start justify-between gap-3">
                               {/* Left side: Time & Client Details */}
-                              <div className="flex items-start gap-3.5">
+                              <div className="flex items-start gap-3.5 min-w-0">
                                 {/* Time block badge */}
                                 <div
                                   className={`px-3 py-2 rounded-xl flex flex-col items-center justify-center shrink-0 font-bold ${
@@ -483,9 +483,9 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                   </span>
                                 </div>
 
-                                <div className="space-y-1">
+                                <div className="space-y-1 min-w-0">
                                   {/* Client Name */}
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
                                     <h3
                                       onClick={() =>
                                         matchingStudent && onSelectStudent?.(matchingStudent)
@@ -525,15 +525,13 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                               </div>
 
                               {/* Right side: Actions menu (Google Agenda / Reagendar / Cliente fez) */}
-                              <div className="flex items-center self-end sm:self-center shrink-0">
-                                <button
-                                  onClick={() => setActionsSession(session)}
-                                  className="p-2 rounded-full text-[#506261] hover:text-[#00615f] hover:bg-[#eceeee] border border-[#bec9c7]/70 transition-all active:scale-95 cursor-pointer"
-                                  title="Ver ações desta aula"
-                                >
-                                  <MoreVertical className="w-4 h-4" />
-                                </button>
-                              </div>
+                              <button
+                                onClick={() => setActionsSession(session)}
+                                className="p-2 rounded-full text-[#506261] hover:text-[#00615f] hover:bg-[#eceeee] border border-[#bec9c7]/70 transition-all active:scale-95 cursor-pointer shrink-0"
+                                title="Ver ações desta aula"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
                         );
@@ -843,12 +841,12 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
       {/* Actions Modal (Google Agenda / Reagendar / Cliente fez) */}
       {actionsSession && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in"
           onClick={() => setActionsSession(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl border border-[#bec9c7]/60 space-y-3"
+            className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl border border-[#bec9c7]/60 space-y-3 max-h-[85vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between border-b border-[#eceeee] pb-3">
               <div>
