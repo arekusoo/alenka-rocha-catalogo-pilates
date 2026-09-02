@@ -280,20 +280,22 @@ export const ScheduleSessionsView: React.FC<ScheduleSessionsViewProps> = ({
               </p>
             </div>
 
-            <label className="inline-flex items-center gap-2 bg-[#f2f4f4] hover:bg-[#eceeee] px-3.5 py-2 rounded-xl border border-[#bec9c7]/80 cursor-pointer transition-colors shrink-0">
-              <input
-                type="checkbox"
-                checked={sameTimeForAll}
-                onChange={(e) => handleToggleSameTime(e.target.checked)}
-                className="w-4 h-4 text-[#00615f] rounded-sm focus:ring-[#00615f] accent-[#00615f]"
-              />
-              <span className="text-xs font-semibold text-[#191c1d]">
-                Mesmo horário para todas as aulas
-              </span>
-            </label>
+            {classSlots.length > 1 && (
+              <label className="inline-flex items-center gap-2 bg-[#f2f4f4] hover:bg-[#eceeee] px-3.5 py-2 rounded-xl border border-[#bec9c7]/80 cursor-pointer transition-colors shrink-0">
+                <input
+                  type="checkbox"
+                  checked={sameTimeForAll}
+                  onChange={(e) => handleToggleSameTime(e.target.checked)}
+                  className="w-4 h-4 text-[#00615f] rounded-sm focus:ring-[#00615f] accent-[#00615f]"
+                />
+                <span className="text-xs font-semibold text-[#191c1d]">
+                  Mesmo horário para todas as aulas
+                </span>
+              </label>
+            )}
           </div>
 
-          {sameTimeForAll && (
+          {classSlots.length > 1 && sameTimeForAll && (
             <div className="bg-[#d0e4e3]/30 border border-[#bec9c7] rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <Clock className="w-4 h-4 text-[#00615f] shrink-0" />
