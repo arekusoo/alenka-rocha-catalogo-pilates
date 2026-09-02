@@ -16,6 +16,9 @@ import {
   Filter,
   XCircle,
   History,
+  AlertCircle,
+  MoreVertical,
+  X,
 } from 'lucide-react';
 import { ClassSession, Student } from '../types';
 import { generateGoogleCalendarUrl } from '../utils/calendarExport';
@@ -45,6 +48,9 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   const [reschedulingSession, setReschedulingSession] = useState<ClassSession | null>(null);
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
+
+  // Actions menu modal state (Google Agenda / Reagendar / Cliente fez)
+  const [actionsSession, setActionsSession] = useState<ClassSession | null>(null);
 
   // Today reference in YYYY-MM-DD
   const todayStr = useMemo(() => {
@@ -354,7 +360,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
               }`}
               title="Exibir aulas atrasadas que ainda não foram confirmadas"
             >
-              <AlertTriangle className="w-3.5 h-3.5" />
+              <AlertCircle className="w-3.5 h-3.5" />
               <span>Pendentes</span>
             </button>
           </div>
@@ -518,47 +524,15 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                 </div>
                               </div>
 
-                              {/* Right side: Action Buttons (Google Agenda / Reagendar / Cliente fez / Cliente não fez) */}
-                              <div className="flex flex-wrap items-center gap-2 self-end sm:self-center shrink-0">
-                                <a
-                                  href={generateGoogleCalendarUrl(session, matchingStudent)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#506261] hover:text-[#00615f] hover:bg-[#d0e4e3]/30 border border-[#bec9c7]/70 transition-all flex items-center gap-1 cursor-pointer"
-                                  title="Adicionar esta aula ao Google Agenda"
-                                >
-                                  <Calendar className="w-3.5 h-3.5 text-[#00615f]" />
-                                  <span className="hidden sm:inline">Google</span> Agenda
-                                </a>
-
+                              {/* Right side: Actions menu (Google Agenda / Reagendar / Cliente fez) */}
+                              <div className="flex items-center self-end sm:self-center shrink-0">
                                 <button
-                                  onClick={() => handleOpenReschedule(session)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#506261] hover:text-[#00615f] hover:bg-[#eceeee] border border-[#bec9c7]/70 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
-                                  title="Mudar data ou horário da aula"
+                                  onClick={() => setActionsSession(session)}
+                                  className="p-2 rounded-full text-[#506261] hover:text-[#00615f] hover:bg-[#eceeee] border border-[#bec9c7]/70 transition-all active:scale-95 cursor-pointer"
+                                  title="Ver ações desta aula"
                                 >
-                                  <RotateCcw className="w-3.5 h-3.5" />
-                                  <span>Reagendar</span>
+                                  <MoreVertical className="w-4 h-4" />
                                 </button>
-
-                                {!isCompleted ? (
-                                  <button
-                                    onClick={() => onConfirmAttendance(session, true)}
-                                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-emerald-50/50 text-[#191c1d] border border-[#bec9c7]/80 hover:border-emerald-500 shadow-2xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
-                                    title="Registrar que o cliente fez a aula presencial"
-                                  >
-                                    <Check className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
-                                    <span>Cliente fez</span>
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => onConfirmAttendance(session, false)}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-[#bec9c7] text-[#506261] hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-colors flex items-center gap-1 cursor-pointer"
-                                    title="Desmarcar presença (Cliente não fez)"
-                                  >
-                                    <XCircle className="w-3.5 h-3.5" />
-                                    <span>Cliente não fez</span>
-                                  </button>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -862,6 +836,86 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Actions Modal (Google Agenda / Reagendar / Cliente fez) */}
+      {actionsSession && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in"
+          onClick={() => setActionsSession(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl border border-[#bec9c7]/60 space-y-3"
+          >
+            <div className="flex items-center justify-between border-b border-[#eceeee] pb-3">
+              <div>
+                <h3 className="text-base font-bold text-[#191c1d]">Ações da Aula</h3>
+                <p className="text-xs text-[#506261] mt-0.5">
+                  Cliente: <strong>{actionsSession.studentName}</strong>
+                </p>
+              </div>
+              <button
+                onClick={() => setActionsSession(null)}
+                className="p-1.5 rounded-full text-[#506261] hover:bg-[#eceeee] cursor-pointer"
+                title="Fechar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <a
+                href={generateGoogleCalendarUrl(
+                  actionsSession,
+                  students.find((s) => s.id === actionsSession.studentId)
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setActionsSession(null)}
+                className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-[#191c1d] hover:bg-[#eceeee] border border-[#bec9c7]/70 transition-all flex items-center gap-2.5 cursor-pointer"
+              >
+                <Calendar className="w-4 h-4 text-[#00615f]" />
+                <span>Agendar no Google Agenda</span>
+              </a>
+
+              <button
+                onClick={() => {
+                  handleOpenReschedule(actionsSession);
+                  setActionsSession(null);
+                }}
+                className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-[#191c1d] hover:bg-[#eceeee] border border-[#bec9c7]/70 transition-all flex items-center gap-2.5 cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4 text-[#00615f]" />
+                <span>Reagendar</span>
+              </button>
+
+              {actionsSession.status !== 'completed' ? (
+                <button
+                  onClick={() => {
+                    onConfirmAttendance(actionsSession, true);
+                    setActionsSession(null);
+                  }}
+                  className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-[#191c1d] hover:bg-emerald-50/50 border border-[#bec9c7]/70 hover:border-emerald-500 transition-all flex items-center gap-2.5 cursor-pointer"
+                >
+                  <Check className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
+                  <span>Cliente fez</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    onConfirmAttendance(actionsSession, false);
+                    setActionsSession(null);
+                  }}
+                  className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-[#506261] hover:bg-rose-50 hover:text-rose-700 border border-[#bec9c7]/70 hover:border-rose-200 transition-all flex items-center gap-2.5 cursor-pointer"
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span>Cliente não fez</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
